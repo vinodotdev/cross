@@ -91,7 +91,9 @@ impl Host {
                 Host::X86_64UnknownLinuxGnu
                 | Host::Aarch64UnknownLinuxGnu
                 | Host::X86_64UnknownLinuxMusl
-                | Host::Aarch64UnknownLinuxMusl => target.map(|t| t.needs_docker()).unwrap_or(true),
+                | Host::Aarch64UnknownLinuxMusl => target
+                    .map(|t| t.is_apple() || t.needs_docker())
+                    .unwrap_or(true),
                 Host::X86_64PcWindowsMsvc => target
                     .map(|t| t.triple() != Host::X86_64PcWindowsMsvc.triple() && t.needs_docker())
                     .unwrap_or(false),
@@ -383,6 +385,11 @@ pub fn run() -> Result<ExitStatus> {
                 .map(|sc| sc.needs_interpreter())
                 .unwrap_or(false);
 
+            let needs_docker = match host {
+                Host::X86_64UnknownLinuxGnu => target.needs_docker() || target.is_apple(),
+                _ => target.needs_docker(),
+            };
+
             let mut filtered_args = if args
                 .subcommand
                 .map_or(false, |s| !s.needs_target_in_command())
@@ -420,7 +427,9 @@ pub fn run() -> Result<ExitStatus> {
                 filtered_args.push("-Zbuild-std".to_string());
             }
 
-            if target.needs_docker() && args.subcommand.map(|sc| sc.needs_docker()).unwrap_or(false)
+            if image_exists
+                && needs_docker
+                && args.subcommand.map(|sc| sc.needs_docker()).unwrap_or(false)
             {
                 if host_version_meta.needs_interpreter()
                     && needs_interpreter

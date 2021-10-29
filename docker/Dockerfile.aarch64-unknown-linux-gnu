@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 COPY common.sh lib.sh /
@@ -11,8 +11,12 @@ COPY xargo.sh /
 RUN /xargo.sh
 
 RUN apt-get update && apt-get install --assume-yes --no-install-recommends \
-    g++-aarch64-linux-gnu \
-    libc6-dev-arm64-cross
+  g++-aarch64-linux-gnu \
+  libc6-dev-arm64-cross
+
+RUN DEBIAN_FRONTEND=noninteractive dpkg --add-architecture arm64 && \
+    apt-get update && \
+    apt-get install --assume-yes libssl-dev:arm64
 
 COPY qemu.sh /
 RUN /qemu.sh aarch64 softmmu
@@ -26,10 +30,10 @@ RUN /linux-image.sh aarch64
 COPY linux-runner /
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER="/linux-runner aarch64" \
-    CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
-    CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
-    BINDGEN_EXTRA_CLANG_ARGS_aarch64_unknown_linux_gnu="--sysroot=/usr/aarch64-linux-gnu" \
-    QEMU_LD_PREFIX=/usr/aarch64-linux-gnu \
-    RUST_TEST_THREADS=1 \
-    PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig/:${PKG_CONFIG_PATH}"
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER="/linux-runner aarch64" \
+  CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
+  CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
+  BINDGEN_EXTRA_CLANG_ARGS_aarch64_unknown_linux_gnu="--sysroot=/usr/aarch64-linux-gnu" \
+  QEMU_LD_PREFIX=/usr/aarch64-linux-gnu \
+  RUST_TEST_THREADS=1 \
+  PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig/:${PKG_CONFIG_PATH}"
